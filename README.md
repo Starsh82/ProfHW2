@@ -368,4 +368,146 @@ Consistency Policy : resync
 </details>
 
 ---
-raid-массив восстановлен!
+raid-массив восстановлен
+---
+---
+---
+Создание GPT таблицы, разбивка raid-массива на 5 партиций и монтирование их в системе
+---
+Создаём raid-массив
+```
+root@UbuntuTestVirt:~# mdadm --create --verbose /dev/md0 -l 5 -n 5
+mdadm: You haven't given enough devices (real or missing) to create this array
+root@UbuntuTestVirt:~# mdadm --create --verbose /dev/md0 -l 5 -n 5 /dev/sd{b..f}
+mdadm: layout defaults to left-symmetric
+mdadm: layout defaults to left-symmetric
+mdadm: chunk size defaults to 512K
+mdadm: size set to 1046528K
+mdadm: Defaulting to version 1.2 metadata
+mdadm: array /dev/md0 started.
+```
+---
+Создаём таблицу раздела GPT
+```
+root@UbuntuTestVirt:~# parted -s /dev/md0 mklabel gpt
+```
+---
+Разбиваем массив на партиции
+```
+root@UbuntuTestVirt:~# parted /dev/md0 mkpart primary ext4 0% 20%
+Information: You may need to update /etc/fstab.
+
+root@UbuntuTestVirt:~# parted /dev/md0 mkpart primary ext4 20% 40%
+Information: You may need to update /etc/fstab.
+
+root@UbuntuTestVirt:~# parted /dev/md0 mkpart primary ext4 40% 60%
+Information: You may need to update /etc/fstab.
+
+root@UbuntuTestVirt:~# parted /dev/md0 mkpart primary ext4 60% 80%
+Information: You may need to update /etc/fstab.
+
+root@UbuntuTestVirt:~# parted /dev/md0 mkpart primary ext4 80% 100%
+Information: You may need to update /etc/fstab.
+
+```
+```
+root@UbuntuTestVirt:~# blkid
+/dev/mapper/ubuntu--vg-ubuntu--lv: UUID="e0424512-1af6-4c3e-9320-eea1a56715d9" BLOCK_SIZE="4096" TYPE="ext4"
+/dev/sda2: UUID="40ee35c7-71ee-4b50-95df-5f9931acd212" BLOCK_SIZE="4096" TYPE="ext4" PTTYPE="dos" PARTUUID="789bff17-e1fd-4060-802c-26b58b8b98fe"
+/dev/sda3: UUID="Z2oOkX-pbsK-K9PU-5w4c-2iAB-S6pv-BJlINu" TYPE="LVM2_member" PARTUUID="40b34a4d-4719-4e02-9b2c-6bd01ea2b7a5"
+/dev/sdf: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="546b831a-eab0-1b13-cc99-624419122175" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/sdd: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="5fcfb337-5094-ba00-84f4-53c73f580a7d" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/sdb: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="65070755-a00d-1da1-c2d4-69a00396f213" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/md0p4: PARTLABEL="primary" PARTUUID="e35d1f0d-7112-4450-9b79-dfd4157a1eca"
+/dev/md0p2: PARTLABEL="primary" PARTUUID="0484840d-c360-4a20-9c7b-9b2b94827615"
+/dev/md0p5: PARTLABEL="primary" PARTUUID="bb4231a9-6a52-401b-a63f-22892d9536f1"
+/dev/md0p3: PARTLABEL="primary" PARTUUID="98ec4339-db9e-40ed-8e0f-4d60ba6fe379"
+/dev/md0p1: PARTLABEL="primary" PARTUUID="86d9a61e-fb0f-48cb-998d-39838721fd93"
+/dev/sde: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="7d59e18f-a47c-17bc-8d4d-31a32372a820" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/sdc: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="e836cc53-d8ff-b335-39ae-c20d1eac1e82" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/sda1: PARTUUID="21c287ea-809b-4952-9736-19b6c28aa2b6"
+```
+---
+Создаём файловую систему EXT4 на всех разделах
+```
+root@UbuntuTestVirt:~# for i in {1..5}; do mkfs.ext4 /dev/md0p$i; done
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 208896 4k blocks and 52304 inodes
+Filesystem UUID: ef7fc17a-a01f-4b70-ab1b-5da292e9dcfc
+Superblock backups stored on blocks:
+        32768, 98304, 163840
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (4096 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 209408 4k blocks and 52416 inodes
+Filesystem UUID: f5d4f250-088d-42d3-9873-4bb40a1ce6e5
+Superblock backups stored on blocks:
+        32768, 98304, 163840
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (4096 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 208896 4k blocks and 52304 inodes
+Filesystem UUID: d510657d-8b00-4cfe-96ee-2d410ff1b104
+Superblock backups stored on blocks:
+        32768, 98304, 163840
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (4096 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 209408 4k blocks and 52416 inodes
+Filesystem UUID: 812756c1-2f1c-4260-8240-001f6eeb6890
+Superblock backups stored on blocks:
+        32768, 98304, 163840
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (4096 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 208896 4k blocks and 52304 inodes
+Filesystem UUID: d9119385-55ac-4650-a304-fb20d4d259fa
+Superblock backups stored on blocks:
+        32768, 98304, 163840
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (4096 blocks): done
+Writing superblocks and filesystem accounting information: done
+```
+```
+root@UbuntuTestVirt:~# blkid
+/dev/mapper/ubuntu--vg-ubuntu--lv: UUID="e0424512-1af6-4c3e-9320-eea1a56715d9" BLOCK_SIZE="4096" TYPE="ext4"
+/dev/sda2: UUID="40ee35c7-71ee-4b50-95df-5f9931acd212" BLOCK_SIZE="4096" TYPE="ext4" PTTYPE="dos" PARTUUID="789bff17-e1fd-4060-802c-26b58b8b98fe"
+/dev/sda3: UUID="Z2oOkX-pbsK-K9PU-5w4c-2iAB-S6pv-BJlINu" TYPE="LVM2_member" PARTUUID="40b34a4d-4719-4e02-9b2c-6bd01ea2b7a5"
+/dev/sdf: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="546b831a-eab0-1b13-cc99-624419122175" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/sdd: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="5fcfb337-5094-ba00-84f4-53c73f580a7d" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/sdb: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="65070755-a00d-1da1-c2d4-69a00396f213" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/sde: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="7d59e18f-a47c-17bc-8d4d-31a32372a820" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/sdc: UUID="4029d689-decd-49b9-844e-d15e85d84e1a" UUID_SUB="e836cc53-d8ff-b335-39ae-c20d1eac1e82" LABEL="UbuntuTestVirt:0" TYPE="linux_raid_member"
+/dev/md0p4: UUID="812756c1-2f1c-4260-8240-001f6eeb6890" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="primary" PARTUUID="e35d1f0d-7112-4450-9b79-dfd4157a1eca"
+/dev/md0p2: UUID="f5d4f250-088d-42d3-9873-4bb40a1ce6e5" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="primary" PARTUUID="0484840d-c360-4a20-9c7b-9b2b94827615"
+/dev/md0p5: UUID="d9119385-55ac-4650-a304-fb20d4d259fa" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="primary" PARTUUID="bb4231a9-6a52-401b-a63f-22892d9536f1"
+/dev/md0p3: UUID="d510657d-8b00-4cfe-96ee-2d410ff1b104" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="primary" PARTUUID="98ec4339-db9e-40ed-8e0f-4d60ba6fe379"
+/dev/md0p1: UUID="ef7fc17a-a01f-4b70-ab1b-5da292e9dcfc" BLOCK_SIZE="4096" TYPE="ext4" PARTLABEL="primary" PARTUUID="86d9a61e-fb0f-48cb-998d-39838721fd93"
+/dev/sda1: PARTUUID="21c287ea-809b-4952-9736-19b6c28aa2b6"
+```
+---
+Создаём точки монтирования и монтируем партиции
+```
+root@UbuntuTestVirt:~# mkdir -p /raid/{1..5}
+```
+```
+root@UbuntuTestVirt:~# for i in $(seq 1 5); do mount /dev/md0p$i /raid/$i; done
+```
