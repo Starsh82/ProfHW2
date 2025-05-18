@@ -130,7 +130,7 @@ tmpfs                              197M   12K  197M   1% /run/user/1000
 Смотрим изменение размера данных на /dev/md127
 ```
 root@UbuntuTestVirt:~# df -h
-...
+---
 /dev/md127                         2,0G  1,1G  739M  61% /mnt/raid
 ```
 Содержимое /mnt/raid/.
@@ -146,10 +146,11 @@ root@UbuntuTestVirt:~# df -h
       06.mp3  13.mp3  apt                    btmp           dmesg.1.gz             dpkg.log.3.gz  kern.log.3.gz  README      ubuntu-advantage-apt-hook.log
       07.mp3  14.mp3  auth.log               btmp.1         dmesg.2.gz             faillog        kern.log.4.gz  syslog      unattended-upgrades
     </code>
-</details><br>
+</details>
+
 ---
 "Ломаем" raid-массив.
-<code>
+```
 root@UbuntuTestVirt:~# mdadm -D /dev/md127
 /dev/md127:
            Version : 1.2
@@ -182,7 +183,7 @@ Consistency Policy : resync
        1       8       32        1      active sync set-B   /dev/sdc
        2       8       48        2      active sync set-A   /dev/sdd
        3       8       64        3      active sync set-B   /dev/sde  
-</code>
+```
 ```
 root@UbuntuTestVirt:~# mdadm /dev/md127 --fail /dev/sdd
 mdadm: set /dev/sdd faulty in /dev/md127
@@ -223,7 +224,7 @@ Consistency Policy : resync
 
        2       8       48        -      faulty   /dev/sdd
 ```
-...
+---
 Проверяем сохранность данных.
 <details>
   <summary>Вывод соддержимого /mnt/raid/</summary>
@@ -236,7 +237,8 @@ Consistency Policy : resync
 06.mp3  13.mp3  apt                    btmp           dmesg.1.gz             dpkg.log.3.gz  kern.log.3.gz  README      ubuntu-advantage-apt-hook.log
 07.mp3  14.mp3  auth.log               btmp.1         dmesg.2.gz             faillog        kern.log.4.gz  syslog      unattended-upgrades</code>
 </details>
-...
+
+---
 Извлекаем "сбойный диск"
 ```
 root@UbuntuTestVirt:~# mdadm /dev/md127 --remove /dev/sdd
@@ -276,7 +278,7 @@ Consistency Policy : resync
        -       0        0        2      removed
        3       8       64        3      active sync set-B   /dev/sdd
 ```
-...
+---
 Добаваляем в raid-массив новый диск.
 ```
 root@UbuntuTestVirt:~# mdadm /dev/md127 --add /dev/sdf
@@ -352,6 +354,18 @@ Consistency Policy : resync
        4       8       80        2      active sync set-A   /dev/sdf
        3       8       64        3      active sync set-B   /dev/sde
 ```
-...
+Проверяем сохранность данных.
+<details>
+  <summary>Вывод соддержимого /mnt/raid/</summary>
+  <code>root@UbuntuTestVirt:~# ls /mnt/raid/
+01.mp3  08.mp3  15.mp3                 auth.log.1     cloud-init.log         dmesg.3.gz     installer      landscape   syslog.1                       wtmp
+02.mp3  09.mp3  alternatives.log       auth.log.2.gz  cloud-init-output.log  dmesg.4.gz     journal        lastlog     syslog.2.gz
+03.mp3  10.mp3  alternatives.log.1     auth.log.3.gz  dist-upgrade           dpkg.log       kern.log       log         syslog.3.gz
+04.mp3  11.mp3  alternatives.log.2.gz  auth.log.4.gz  dmesg                  dpkg.log.1     kern.log.1     lost+found  syslog.4.gz
+05.mp3  12.mp3  apport.log             bootstrap.log  dmesg.0                dpkg.log.2.gz  kern.log.2.gz  private     sysstat
+06.mp3  13.mp3  apt                    btmp           dmesg.1.gz             dpkg.log.3.gz  kern.log.3.gz  README      ubuntu-advantage-apt-hook.log
+07.mp3  14.mp3  auth.log               btmp.1         dmesg.2.gz             faillog        kern.log.4.gz  syslog      unattended-upgrades</code>
+</details>
+
+---
 raid-массив восстановлен!
-...
